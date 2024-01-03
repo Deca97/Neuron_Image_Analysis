@@ -18,6 +18,7 @@ class ImageProcessorApp:
         self.master.title("Image Processor")
         self.filename = None
         self.current_index = 0
+        self.scale = 30.864
         self.master.geometry("400x250")
         self.master.resizable(False, False)  # Disable resizing in both dimensions
 
@@ -38,6 +39,7 @@ class ImageProcessorApp:
         self.tr_label.grid(row=1, column=0, padx=10, pady=10)
         self.tr_entry = tk.Entry(self.frame)
         self.tr_entry.grid(row=1, column=1, padx=10, pady=10)
+        
 
         self.threshold_label = tk.Label(self.frame, text="Overlapping sensitivity threshold [0.0-1.0]:")
         self.threshold_label.grid(row=2, column=0, padx=10, pady=10)
@@ -207,8 +209,7 @@ class ImageProcessorApp:
                         scale_factor = 0.18*0.18*cropped_dimensions[0]*cropped_dimensions[1]/1000
                         
 
-                        # tr = 30
-                        # radius = 10
+
 
                         # Apply a morphological opening with a circular structuring element
                         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2*radius+1, 2*radius+1))
@@ -229,7 +230,7 @@ class ImageProcessorApp:
 
                         for contour in contours:
                         # Calculate the area of each contour
-                            area = cv2.contourArea(contour)/31
+                            area = cv2.contourArea(contour)/self.scale
                             if area < 3 and area > 0.2: 
                                 area_dots.append(area)
                                 filtered_contours.append(contour)
@@ -282,7 +283,7 @@ class ImageProcessorApp:
 
                     overlapping_contours = []
                     match_score = []
-                    # threshold = 0.1
+
 
                     # Iterate through contours in the first image
                     for contour1 in filtered_contours_verde:
@@ -290,14 +291,22 @@ class ImageProcessorApp:
                         for contour2 in filtered_contours_rosso:
 
                             # Compare contours using matchShapes
-                            match_score = cv2.matchShapes(contour1, contour2, cv2.CONTOURS_MATCH_I2, 0.0)
+                            x1, y1, w1, h1 = cv2.boundingRect(contour1)
+                            x2, y2, w2, h2 = cv2.boundingRect(contour2)
 
-                            # Check if the match score is below the threshold
-                            if match_score < threshold:
-                                # Contours overlap, add to the list
-                                overlapping_contours.append(contour1)
+                            intersection_area = max(0, min(x1 + w1, x2 + w2) - max(x1, x2)) * max(0, min(y1 + h1, y2 + h2) - max(y1, y2))
 
-                    overlapping_dots = len(overlapping_contours)/scale_factor
+                            area1 = cv2.contourArea(contour1)
+                            area2 = cv2.contourArea(contour2)
+
+                            # Calculate the overlap ratio
+                            overlap_ratio = intersection_area / min(area1, area2)
+
+                            if overlap_ratio > threshold: 
+                                overlapping_contours.append(overlap_ratio)
+            
+
+                    overlapping_dots = len(overlapping_contours)/scale_factor * 1000
 
                     print('\nNumber of common points between chennels/1000 um^2: ', overlapping_dots)
 
