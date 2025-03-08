@@ -1,4 +1,4 @@
-Neuron Image Analysis Tool
+# Neuron Image Analysis Tool
 
 Overview
 
